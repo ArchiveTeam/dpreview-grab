@@ -60,11 +60,11 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20230407.03'
+VERSION = '20230407.04'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
 TRACKER_ID = 'dpreview'
 TRACKER_HOST = 'legacy-api.arpa.li'
-MULTI_ITEM_SIZE = 20
+MULTI_ITEM_SIZE = 10
 
 
 ###########################################################################
@@ -233,8 +233,8 @@ class WgetArgs(object):
         return self.post_chars[m]
 
     def realize(self, item):
-        #with open('user-agents.txt', 'r') as f:
-        #    USER_AGENT = random.choice(list(f)).strip()
+        with open('user-agents.txt', 'r') as f:
+            USER_AGENT = random.choice(list(f)).strip()
         wget_args = [
             WGET_AT,
             '-U', USER_AGENT,

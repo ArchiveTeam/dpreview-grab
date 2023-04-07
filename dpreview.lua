@@ -112,7 +112,8 @@ allowed = function(url, parenturl)
     or string.match(url, "/forums/reply")
     or string.match(url, "/forums/thread/[0-9]+/[0-9]+$")
     or string.match(url, "^https?://login%.dpreview%.com/")
-    or string.match(url, "^https?://[^/]*dpreview%.com/feedback%?") then
+    or string.match(url, "^https?://[^/]*dpreview%.com/feedback%?")
+    or string.match(url, "[%?&]JumpToComment=") then
     return false
   end
 
