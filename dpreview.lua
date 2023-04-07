@@ -281,7 +281,8 @@ wget.callbacks.write_to_warc = function(url, http_stat)
     error("No item name found.")
   end
   if status_code == 429 then
-    print("Banned! Sleeping 400 seconds.")
+    io.stdout:write("Banned! Sleeping 400 seconds.\n")
+    io.stdout:flush()
     os.execute("sleep 400")
   end
   if status_code ~= 200 then
