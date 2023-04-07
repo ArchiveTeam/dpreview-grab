@@ -132,7 +132,7 @@ allowed = function(url, parenturl)
   end
 
   if string.match(url, "^https?://[^/]*dpreview%.com/") then
-    discover_item(discovered_items, url)
+    discover_item(discovered_items, "url:" .. url)
     return false
   else
     discover_item(discovered_outlinks, url)
