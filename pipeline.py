@@ -60,7 +60,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20230407.02'
+VERSION = '20230407.03'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
 TRACKER_ID = 'dpreview'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -286,11 +286,15 @@ class WgetArgs(object):
         if '--concurrent' in sys.argv:
             concurrency = int(sys.argv[sys.argv.index('--concurrent')+1])
         else:
-            concurrency = 4
+            concurrency = os.getenv('CONCURRENT_ITEMS')
+            if concurrency is None:
+                concurrency = 4
 
         item['concurrency'] = str(concurrency)
 
         for item_name in item['item_name'].split('\0'):
+            if item_name.startswith('http://') or item_name.startswith('https://'):
+                item_name = 'url:' + item_name
             wget_args.extend(['--warc-header', 'x-wget-at-project-item-name: '+item_name])
             wget_args.append('item-name://'+item_name)
             item_type, item_value = item_name.split(':', 1)
