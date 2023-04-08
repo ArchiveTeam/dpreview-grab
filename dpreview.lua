@@ -8,6 +8,8 @@ JSON = (loadfile "JSON.lua")()
 local item_dir = os.getenv("item_dir")
 local warc_file_base = os.getenv("warc_file_base")
 local concurrency = os.getenv("concurrency")
+local item_names_newline = os.getenv("item_names_newline")
+local item_names = {}
 local item_type = nil
 local item_name = nil
 local item_value = nil
@@ -29,6 +31,10 @@ local discovered_outlinks = {}
 local discovered_items = {}
 local bad_items = {}
 local ids = {}
+
+for s in string.gmatch(item_names_newline, "([^\n]+)") do
+  item_names[string.lower(s)] = true
+end
 
 local retry_url = false
 
@@ -73,7 +79,7 @@ end
 
 discover_item = function(target, item)
   if not target[item] then
---print('queuing' , item)
+print('queuing' , item)
     target[item] = true
     return true
   end
@@ -86,6 +92,10 @@ find_item = function(url)
   if not value then
     value = string.match(url, "^https://www%.dpreview%.com/forums/post/([0-9]+)$")
     type_ = "post"
+  end
+  if not value and item_names["url:" .. string.lower(url)] then
+    value = url
+    type_ = "url"
   end
   if value then
     item_type = type_
@@ -104,7 +114,10 @@ find_item = function(url)
 end
 
 allowed = function(url, parenturl)
-  if ids[url] then
+  if ids[url]
+    or ids[string.lower(url)]
+    or url == item_value
+    or string.lower(url) == item_value then
     return true
   end
 
@@ -181,6 +194,12 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
 
   local function check(newurl)
     newurl = decode_codepoint(newurl)
+    if string.match(newurl, "%s") then
+      for s in string.gmatch(newurl, "([^%s]+)") do
+        check(s)
+      end
+      return nil
+    end
     local origurl = url
     local url = string.match(newurl, "^([^#]+)")
     local url_ = string.match(url, "^(.-)[%.\\]*$")
@@ -246,30 +265,35 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
 
-  --[[if allowed(url)
-    and status_code < 300 then
+  if allowed(url)
+    and status_code < 300
+    and (
+      string.match(url, "^https?://dpreview%.com/")
+      or string.match(url, "^https?://www%.dpreview%.com/")
+    ) then
     html = read_file(file)
+    html = string.gsub(html, "\\", "")
     for newurl in string.gmatch(string.gsub(html, "&quot;", '"'), '([^"]+)') do
-      checknewurl(newurl)
+      check(newurl)--checknewurl(newurl)
     end
     for newurl in string.gmatch(string.gsub(html, "&#039;", "'"), "([^']+)") do
-      checknewurl(newurl)
+      check(newurl)--checknewurl(newurl)
     end
     for newurl in string.gmatch(html, "[^%-]href='([^']+)'") do
-      checknewshorturl(newurl)
+      check(newurl)--checknewshorturl(newurl)
     end
     for newurl in string.gmatch(html, '[^%-]href="([^"]+)"') do
-      checknewshorturl(newurl)
+      check(newurl)--checknewshorturl(newurl)
     end
     for newurl in string.gmatch(html, ":%s*url%(([^%)]+)%)") do
-      checknewurl(newurl)
+      check(newurl)--checknewurl(newurl)
     end
     html = string.gsub(html, "&gt;", ">")
     html = string.gsub(html, "&lt;", "<")
     for newurl in string.gmatch(html, ">%s*([^<%s]+)") do
-      checknewurl(newurl)
+      check(newurl)--checknewurl(newurl)
     end
-  end]]
+  end
 
   return urls
 end
@@ -285,7 +309,7 @@ wget.callbacks.write_to_warc = function(url, http_stat)
     io.stdout:flush()
     os.execute("sleep 400")
   end
-  if status_code ~= 200 then
+  if status_code ~= 200 and status_code ~= 301 then
     abort_item()
   end
   if abortgrab then
@@ -307,13 +331,18 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
 
   find_item(url["url"])
 
-  --[[if status_code >= 300 and status_code <= 399 then
+  if status_code >= 300 and status_code <= 399 then
     local newloc = urlparse.absolute(url["url"], http_stat["newloc"])
-    if processed(newloc) or not allowed(newloc, url["url"]) then
+    --[[if processed(newloc) or not allowed(newloc, url["url"]) then
       tries = 0
       return wget.actions.EXIT
+    end]]
+    if status_code == 301 then
+      discover_item(discovered_items, "url:" .. newloc)
+      return wget.actions.EXIT
     end
-  end]]
+    abort_item()
+  end
 
   if string.match(url["url"], "^https?://www%.dpreview%.com/")
     or string.match(url["url"], "^https?://dpreview%.com/") then

@@ -60,7 +60,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20230407.05'
+VERSION = '20230408.01'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
 TRACKER_ID = 'dpreview'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -274,14 +274,20 @@ class WgetArgs(object):
             '--warc-zstd-dict', ItemInterpolation('%(item_dir)s/zstdict'),
         ])
 
-        num_items = item['item_name'].count('\0') + 1
+        num_items = item['item_name'].count('\0')
         item['item_name'] = '\0'.join([
             s for s in item['item_name'].split('\0')
-            if s.split(':', 1)[0] in ('thread', 'post')
+            if (
+                s.split(':', 1)[0] in ('thread', 'post', 'url')
+                and (
+                    s.split(':', 1)[0] != 'url'
+                    or 'img-dpreview.com' in s
+                )
+            )
         ])
-        num_skipped = item['item_name'].count('\0')+1-num_items
+        num_skipped = num_items - item['item_name'].count('\0')
         if num_skipped > 0:
-            print('Aborting {} unsupported items.'.format())
+            print('Aborting {} unsupported items.'.format(num_skipped))
 
         if '--concurrent' in sys.argv:
             concurrency = int(sys.argv[sys.argv.index('--concurrent')+1])
@@ -291,6 +297,8 @@ class WgetArgs(object):
                 concurrency = 4
 
         item['concurrency'] = str(concurrency)
+
+        item['item_names_newline'] = item['item_name'].replace('\0', '\n')
 
         for item_name in item['item_name'].split('\0'):
             if item_name.startswith('http://') or item_name.startswith('https://'):
@@ -349,6 +357,7 @@ pipeline = Pipeline(
         accept_on_exit_code=[0, 4, 8],
         env={
             'item_dir': ItemValue('item_dir'),
+            'item_names_newline': ItemValue('item_names_newline'),
             'warc_file_base': ItemValue('warc_file_base'),
             'concurrency': ItemValue('concurrency')
         }
