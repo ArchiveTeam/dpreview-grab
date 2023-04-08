@@ -363,6 +363,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     or status_code ~= 200 then
     io.stdout:write("Server returned bad response. Skipping.\n")
     io.stdout:flush()
+    abort_item()
     return wget.actions.EXIT
   end
 
