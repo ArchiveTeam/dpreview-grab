@@ -60,7 +60,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20230408.02'
+VERSION = '20230414.01'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
 TRACKER_ID = 'dpreview'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -263,7 +263,8 @@ class WgetArgs(object):
             '--warc-dedup-url-agnostic',
             '--warc-compression-use-zstd',
             '--warc-zstd-dict-no-include',
-            '--header', 'Accept-Language: en-US;q=0.9, en;q=0.8'
+            '--header', 'Accept-Language: en-US;q=0.9, en;q=0.8',
+            '--header', 'Referer: https://www.dpreview.com/'
         ]
         dict_data = ZstdDict.get_dict()
         with open(os.path.join(item['item_dir'], 'zstdict'), 'wb') as f:
